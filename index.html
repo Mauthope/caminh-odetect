@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truck Detection and Tracking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            border: 1px solid #000;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+
+        #info {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Truck Detection and Tracking</h1>
+    <video id="camera" autoplay></video>
+    <div id="info">Waiting for truck detection...</div>
+    <table id="tracking-table">
+        <thead>
+            <tr>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Duration (seconds)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script>
+        const video = document.getElementById('camera');
+        const info = document.getElementById('info');
+        const tableBody = document.getElementById('tracking-table').querySelector('tbody');
+
+        let model;
+        let tracking = false;
+        let startTime = null;
+
+        // Load data from localStorage
+        function loadTable() {
+            const savedData = JSON.parse(localStorage.getItem('trackingData')) || [];
+            savedData.forEach(row => addTableRow(row.startTime, row.endTime, row.duration));
+        }
+
+        // Save data to localStorage
+        function saveRow(startTime, endTime, duration) {
+            const savedData = JSON.parse(localStorage.getItem('trackingData')) || [];
+            savedData.push({ startTime, endTime, duration });
+            localStorage.setItem('trackingData', JSON.stringify(savedData));
+        }
+
+        // Add a new row to the table
+        function addTableRow(startTime, endTime, duration) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${startTime}</td>
+                <td>${endTime}</td>
+                <td>${duration}</td>
+            `;
+            tableBody.appendChild(row);
+        }
+
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            video.play();
+        }
+
+        async function detectFrame() {
+            const predictions = await model.detect(video);
+
+            const truckDetected = predictions.some(prediction => 
+                prediction.class === 'truck' && prediction.score > 0.5
+            );
+
+            if (truckDetected && !tracking) {
+                tracking = true;
+                startTime = new Date();
+                info.textContent = 'Tracking truck...';
+            } else if (!truckDetected && tracking) {
+                tracking = false;
+                const endTime = new Date();
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+                const formattedStartTime = startTime.toLocaleTimeString();
+                const formattedEndTime = endTime.toLocaleTimeString();
+                addTableRow(formattedStartTime, formattedEndTime, duration);
+                saveRow(formattedStartTime, formattedEndTime, duration);
+                info.textContent = 'Waiting for truck detection...';
+            }
+
+            requestAnimationFrame(detectFrame);
+        }
+
+        async function init() {
+            model = await cocoSsd.load();
+            await setupCamera();
+            loadTable();
+            detectFrame();
+        }
+
+        init();
+    </script>
+</body>
+</html>
