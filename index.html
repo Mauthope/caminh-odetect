@@ -41,10 +41,22 @@
             margin-top: 10px;
             font-size: 14px;
         }
+
+        #camera-options {
+            margin-top: 10px;
+        }
+
+        #camera-select {
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
     <h1>Truck Detection and Tracking</h1>
+    <div id="camera-options">
+        <label for="camera-select">Select Camera: </label>
+        <select id="camera-select"></select>
+    </div>
     <video id="camera" autoplay></video>
     <div id="info">Waiting for truck detection...</div>
     <table id="tracking-table">
@@ -62,12 +74,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script>
         const video = document.getElementById('camera');
+        const cameraSelect = document.getElementById('camera-select');
         const info = document.getElementById('info');
         const tableBody = document.getElementById('tracking-table').querySelector('tbody');
 
         let model;
         let tracking = false;
         let startTime = null;
+        let currentStream = null;
 
         // Load data from localStorage
         function loadTable() {
@@ -93,10 +107,39 @@
             tableBody.appendChild(row);
         }
 
-        async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
+        async function setupCamera(deviceId = null) {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
+            const constraints = {
+                video: deviceId ? { deviceId: { exact: deviceId } } : true
+            };
+
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = currentStream;
             video.play();
+        }
+
+        async function populateCameraOptions() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+            cameraSelect.innerHTML = '';
+            videoDevices.forEach((device, index) => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.textContent = device.label || `Camera ${index + 1}`;
+                cameraSelect.appendChild(option);
+            });
+
+            cameraSelect.addEventListener('change', (event) => {
+                setupCamera(event.target.value);
+            });
+
+            if (videoDevices.length > 0) {
+                setupCamera(videoDevices[0].deviceId);
+            }
         }
 
         async function detectFrame() {
@@ -126,7 +169,7 @@
 
         async function init() {
             model = await cocoSsd.load();
-            await setupCamera();
+            await populateCameraOptions();
             loadTable();
             detectFrame();
         }
