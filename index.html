@@ -223,36 +223,32 @@
 
             const currentTime = new Date();
 
-            if (detectedObject && !tracking) {
-                if (!lastBBox || !isSameObject(lastBBox, detectedObject.bbox)) {
+            if (detectedObject) {
+                if (!tracking) {
+                    // Inicia nova detecção se não estiver rastreando
                     tracking = true;
                     startTime = currentTime;
                     detectedType = detectedObject.class === 'truck' ? 'Caminhão' : 'Carreta';
                     lastBBox = detectedObject.bbox;
-                    lastDetectionTime = currentTime; // Atualiza o tempo da última detecção
+                    lastDetectionTime = currentTime;
                     info.textContent = `Rastreando ${detectedType}...`;
+                } else if (isSameObject(lastBBox, detectedObject.bbox)) {
+                    // Continua com a detecção atual se o objeto não mudou
+                    lastDetectionTime = currentTime;
                 }
-            } else if (!detectedObject && tracking) {
-                tracking = false;
-                const endTime = currentTime;
-                const duration = ((endTime - startTime) / 1000).toFixed(2);
-                const formattedStartTime = startTime.toLocaleTimeString();
-                const formattedEndTime = endTime.toLocaleTimeString();
-                addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
-                saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
-                info.textContent = 'Aguardando detecção de caminhão ou carreta...';
-                lastBBox = null;
-            } else if (detectedObject && tracking && (currentTime - lastDetectionTime) > INACTIVITY_TIMEOUT) {
-                // Se o caminhão ou carreta não for detectado por mais de 1 minuto, inicia uma nova detecção
-                tracking = false;
-                const endTime = currentTime;
-                const duration = ((endTime - startTime) / 1000).toFixed(2);
-                const formattedStartTime = startTime.toLocaleTimeString();
-                const formattedEndTime = endTime.toLocaleTimeString();
-                addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
-                saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
-                lastBBox = null;
-                info.textContent = 'Aguardando detecção de caminhão ou carreta...';
+            } else if (tracking) {
+                // Se perder a detecção e o tempo de inatividade for superior a 1 minuto, encerra a detecção
+                if ((currentTime - lastDetectionTime) > INACTIVITY_TIMEOUT) {
+                    tracking = false;
+                    const endTime = currentTime;
+                    const duration = ((endTime - startTime) / 1000).toFixed(2);
+                    const formattedStartTime = startTime.toLocaleTimeString();
+                    const formattedEndTime = endTime.toLocaleTimeString();
+                    addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
+                    saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
+                    info.textContent = 'Aguardando detecção de caminhão ou carreta...';
+                    lastBBox = null;
+                }
             }
 
             requestAnimationFrame(detectFrame);
