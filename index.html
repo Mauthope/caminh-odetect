@@ -12,20 +12,32 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            margin-top: 20px;
         }
 
         video {
             border: 1px solid #000;
             width: 90%;
             max-width: 600px;
-            position: absolute;
+            position: relative;
+            z-index: 1;
         }
 
         canvas {
             position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
             width: 90%;
             max-width: 600px;
+            z-index: 2;
+            pointer-events: none;
         }
 
         table {
@@ -33,6 +45,8 @@
             border-collapse: collapse;
             width: 90%;
             max-width: 600px;
+            background-color: #fff;
+            border: 1px solid #ddd;
         }
 
         table, th, td {
@@ -47,6 +61,7 @@
         #info {
             margin-top: 10px;
             font-size: 14px;
+            color: #555;
         }
 
         #camera-options {
@@ -60,6 +75,7 @@
         .container {
             position: relative;
             display: inline-block;
+            margin-top: 20px;
         }
     </style>
 </head>
