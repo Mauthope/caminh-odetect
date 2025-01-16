@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Truck and Trailer Detection and Tracking</title>
+    <title>Detecção e Rastreamento de Caminhões e Carretas</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -92,26 +92,26 @@
     </style>
 </head>
 <body>
-    <h1>Truck and Trailer Detection and Tracking</h1>
+    <h1>Detecção e Rastreamento de Caminhões e Carretas</h1>
     <div class="container">
         <video id="camera" autoplay></video>
         <canvas id="overlay"></canvas>
     </div>
-    <div id="info">Waiting for truck or trailer detection...</div>
+    <div id="info">Aguardando detecção de caminhão ou carreta...</div>
     <table id="tracking-table">
         <thead>
             <tr>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Duration (seconds)</th>
-                <th>Type</th>
+                <th>Início</th>
+                <th>Término</th>
+                <th>Duração (segundos)</th>
+                <th>Tipo</th>
             </tr>
         </thead>
         <tbody></tbody>
     </table>
     <div class="buttons">
-        <button id="clear-storage">Clear Local Storage</button>
-        <button id="download-csv">Download CSV</button>
+        <button id="clear-storage">Limpar Dados</button>
+        <button id="download-csv">Baixar CSV</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -131,20 +131,20 @@
         let currentStream = null;
         let detectedType = '';
 
-        // Load data from localStorage
+        // Carregar dados do localStorage
         function loadTable() {
             const savedData = JSON.parse(localStorage.getItem('trackingData')) || [];
             savedData.forEach(row => addTableRow(row.startTime, row.endTime, row.duration, row.type));
         }
 
-        // Save data to localStorage
+        // Salvar dados no localStorage
         function saveRow(startTime, endTime, duration, type) {
             const savedData = JSON.parse(localStorage.getItem('trackingData')) || [];
             savedData.push({ startTime, endTime, duration, type });
             localStorage.setItem('trackingData', JSON.stringify(savedData));
         }
 
-        // Add a new row to the table
+        // Adicionar nova linha na tabela
         function addTableRow(startTime, endTime, duration, type) {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -162,7 +162,7 @@
             }
 
             const constraints = {
-                video: { facingMode: { exact: 'environment' } } // Use the rear-facing camera
+                video: { facingMode: { exact: 'environment' } } // Usar câmera traseira
             };
 
             currentStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -199,7 +199,7 @@
                 );
             });
 
-            console.log(predictions); // Log predictions to the console
+            console.log(predictions); // Log de previsões no console
 
             const detectedObject = predictions.find(prediction => 
                 (prediction.class === 'truck' || prediction.class === 'car') && prediction.score > 0.5
@@ -208,8 +208,8 @@
             if (detectedObject && !tracking) {
                 tracking = true;
                 startTime = new Date();
-                detectedType = detectedObject.class === 'truck' ? 'Truck' : 'Trailer';
-                info.textContent = `Tracking ${detectedType}...`;
+                detectedType = detectedObject.class === 'truck' ? 'Caminhão' : 'Carreta';
+                info.textContent = `Rastreando ${detectedType}...`;
             } else if (!detectedObject && tracking) {
                 tracking = false;
                 const endTime = new Date();
@@ -218,7 +218,7 @@
                 const formattedEndTime = endTime.toLocaleTimeString();
                 addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
                 saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
-                info.textContent = 'Waiting for truck or trailer detection...';
+                info.textContent = 'Aguardando detecção de caminhão ou carreta...';
             }
 
             requestAnimationFrame(detectFrame);
@@ -227,11 +227,11 @@
         function clearLocalStorage() {
             localStorage.removeItem('trackingData');
             tableBody.innerHTML = '';
-            alert('Local storage cleared!');
+            alert('Dados limpos com sucesso!');
         }
 
         function downloadCSV() {
-            const rows = [['Start Time', 'End Time', 'Duration (seconds)', 'Type']];
+            const rows = [['Início', 'Término', 'Duração (segundos)', 'Tipo']];
             const savedData = JSON.parse(localStorage.getItem('trackingData')) || [];
 
             savedData.forEach(row => {
@@ -242,7 +242,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement('a');
             link.setAttribute('href', encodedUri);
-            link.setAttribute('download', 'tracking_data.csv');
+            link.setAttribute('download', 'dados_rastreamento.csv');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
