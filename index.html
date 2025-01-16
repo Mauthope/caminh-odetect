@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Truck Detection and Tracking</title>
+    <title>Truck and Trailer Detection and Tracking</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,19 +52,20 @@
     </style>
 </head>
 <body>
-    <h1>Truck Detection and Tracking</h1>
+    <h1>Truck and Trailer Detection and Tracking</h1>
     <div id="camera-options">
         <label for="camera-select">Select Camera: </label>
         <select id="camera-select"></select>
     </div>
     <video id="camera" autoplay></video>
-    <div id="info">Waiting for truck detection...</div>
+    <div id="info">Waiting for truck or trailer detection...</div>
     <table id="tracking-table">
         <thead>
             <tr>
                 <th>Start Time</th>
                 <th>End Time</th>
                 <th>Duration (seconds)</th>
+                <th>Type</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -82,27 +83,29 @@
         let tracking = false;
         let startTime = null;
         let currentStream = null;
+        let detectedType = '';
 
         // Load data from localStorage
         function loadTable() {
             const savedData = JSON.parse(localStorage.getItem('trackingData')) || [];
-            savedData.forEach(row => addTableRow(row.startTime, row.endTime, row.duration));
+            savedData.forEach(row => addTableRow(row.startTime, row.endTime, row.duration, row.type));
         }
 
         // Save data to localStorage
-        function saveRow(startTime, endTime, duration) {
+        function saveRow(startTime, endTime, duration, type) {
             const savedData = JSON.parse(localStorage.getItem('trackingData')) || [];
-            savedData.push({ startTime, endTime, duration });
+            savedData.push({ startTime, endTime, duration, type });
             localStorage.setItem('trackingData', JSON.stringify(savedData));
         }
 
         // Add a new row to the table
-        function addTableRow(startTime, endTime, duration) {
+        function addTableRow(startTime, endTime, duration, type) {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${startTime}</td>
                 <td>${endTime}</td>
                 <td>${duration}</td>
+                <td>${type}</td>
             `;
             tableBody.appendChild(row);
         }
@@ -145,23 +148,24 @@
         async function detectFrame() {
             const predictions = await model.detect(video);
 
-            const truckDetected = predictions.some(prediction => 
-                prediction.class === 'truck' && prediction.score > 0.5
+            const detectedObject = predictions.find(prediction => 
+                (prediction.class === 'truck' || prediction.class === 'car') && prediction.score > 0.5
             );
 
-            if (truckDetected && !tracking) {
+            if (detectedObject && !tracking) {
                 tracking = true;
                 startTime = new Date();
-                info.textContent = 'Tracking truck...';
-            } else if (!truckDetected && tracking) {
+                detectedType = detectedObject.class === 'truck' ? 'Truck' : 'Trailer';
+                info.textContent = `Tracking ${detectedType}...`;
+            } else if (!detectedObject && tracking) {
                 tracking = false;
                 const endTime = new Date();
                 const duration = ((endTime - startTime) / 1000).toFixed(2);
                 const formattedStartTime = startTime.toLocaleTimeString();
                 const formattedEndTime = endTime.toLocaleTimeString();
-                addTableRow(formattedStartTime, formattedEndTime, duration);
-                saveRow(formattedStartTime, formattedEndTime, duration);
-                info.textContent = 'Waiting for truck detection...';
+                addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
+                saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
+                info.textContent = 'Waiting for truck or trailer detection...';
             }
 
             requestAnimationFrame(detectFrame);
