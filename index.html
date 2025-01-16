@@ -128,10 +128,12 @@
         let model;
         let tracking = false;
         let startTime = null;
+        let lastDetectionTime = null;
         let currentStream = null;
         let detectedType = '';
         let lastBBox = null;
         const POSITION_TOLERANCE = 50; // Tolerância de movimento em pixels
+        const INACTIVITY_TIMEOUT = 60000; // 1 minuto de inatividade
 
         // Carregar dados do localStorage
         function loadTable() {
@@ -219,17 +221,20 @@
                 (prediction.class === 'truck' || prediction.class === 'car') && prediction.score > 0.5
             );
 
+            const currentTime = new Date();
+
             if (detectedObject && !tracking) {
                 if (!lastBBox || !isSameObject(lastBBox, detectedObject.bbox)) {
                     tracking = true;
-                    startTime = new Date();
+                    startTime = currentTime;
                     detectedType = detectedObject.class === 'truck' ? 'Caminhão' : 'Carreta';
                     lastBBox = detectedObject.bbox;
+                    lastDetectionTime = currentTime; // Atualiza o tempo da última detecção
                     info.textContent = `Rastreando ${detectedType}...`;
                 }
             } else if (!detectedObject && tracking) {
                 tracking = false;
-                const endTime = new Date();
+                const endTime = currentTime;
                 const duration = ((endTime - startTime) / 1000).toFixed(2);
                 const formattedStartTime = startTime.toLocaleTimeString();
                 const formattedEndTime = endTime.toLocaleTimeString();
@@ -237,6 +242,17 @@
                 saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
                 info.textContent = 'Aguardando detecção de caminhão ou carreta...';
                 lastBBox = null;
+            } else if (detectedObject && tracking && (currentTime - lastDetectionTime) > INACTIVITY_TIMEOUT) {
+                // Se o caminhão ou carreta não for detectado por mais de 1 minuto, inicia uma nova detecção
+                tracking = false;
+                const endTime = currentTime;
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+                const formattedStartTime = startTime.toLocaleTimeString();
+                const formattedEndTime = endTime.toLocaleTimeString();
+                addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
+                saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
+                lastBBox = null;
+                info.textContent = 'Aguardando detecção de caminhão ou carreta...';
             }
 
             requestAnimationFrame(detectFrame);
