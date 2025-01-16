@@ -19,6 +19,13 @@
             border: 1px solid #000;
             width: 90%;
             max-width: 600px;
+            position: absolute;
+        }
+
+        canvas {
+            position: absolute;
+            width: 90%;
+            max-width: 600px;
         }
 
         table {
@@ -49,6 +56,11 @@
         #camera-select {
             padding: 5px;
         }
+
+        .container {
+            position: relative;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -57,7 +69,10 @@
         <label for="camera-select">Select Camera: </label>
         <select id="camera-select"></select>
     </div>
-    <video id="camera" autoplay></video>
+    <div class="container">
+        <video id="camera" autoplay></video>
+        <canvas id="overlay"></canvas>
+    </div>
     <div id="info">Waiting for truck or trailer detection...</div>
     <table id="tracking-table">
         <thead>
@@ -78,6 +93,8 @@
         const cameraSelect = document.getElementById('camera-select');
         const info = document.getElementById('info');
         const tableBody = document.getElementById('tracking-table').querySelector('tbody');
+        const canvas = document.getElementById('overlay');
+        const ctx = canvas.getContext('2d');
 
         let model;
         let tracking = false;
@@ -146,7 +163,27 @@
         }
 
         async function detectFrame() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             const predictions = await model.detect(video);
+
+            predictions.forEach(prediction => {
+                const [x, y, width, height] = prediction.bbox;
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, width, height);
+                ctx.font = '16px Arial';
+                ctx.fillStyle = 'red';
+                ctx.fillText(
+                    `${prediction.class} (${(prediction.score * 100).toFixed(1)}%)`,
+                    x,
+                    y > 10 ? y - 5 : 10
+                );
+            });
+
+            console.log(predictions); // Log predictions to the console
 
             const detectedObject = predictions.find(prediction => 
                 (prediction.class === 'truck' || prediction.class === 'car') && prediction.score > 0.5
