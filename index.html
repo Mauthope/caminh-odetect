@@ -130,6 +130,8 @@
         let startTime = null;
         let currentStream = null;
         let detectedType = '';
+        let lastBBox = null;
+        const POSITION_TOLERANCE = 50; // Tolerância de movimento em pixels
 
         // Carregar dados do localStorage
         function loadTable() {
@@ -178,6 +180,20 @@
             });
         }
 
+        function isSameObject(bbox1, bbox2) {
+            if (!bbox1 || !bbox2) return false;
+
+            const [x1, y1, w1, h1] = bbox1;
+            const [x2, y2, w2, h2] = bbox2;
+
+            return (
+                Math.abs(x1 - x2) < POSITION_TOLERANCE &&
+                Math.abs(y1 - y2) < POSITION_TOLERANCE &&
+                Math.abs(w1 - w2) < POSITION_TOLERANCE &&
+                Math.abs(h1 - h2) < POSITION_TOLERANCE
+            );
+        }
+
         async function detectFrame() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -199,17 +215,18 @@
                 );
             });
 
-            console.log(predictions); // Log de previsões no console
-
             const detectedObject = predictions.find(prediction => 
                 (prediction.class === 'truck' || prediction.class === 'car') && prediction.score > 0.5
             );
 
             if (detectedObject && !tracking) {
-                tracking = true;
-                startTime = new Date();
-                detectedType = detectedObject.class === 'truck' ? 'Caminhão' : 'Carreta';
-                info.textContent = `Rastreando ${detectedType}...`;
+                if (!lastBBox || !isSameObject(lastBBox, detectedObject.bbox)) {
+                    tracking = true;
+                    startTime = new Date();
+                    detectedType = detectedObject.class === 'truck' ? 'Caminhão' : 'Carreta';
+                    lastBBox = detectedObject.bbox;
+                    info.textContent = `Rastreando ${detectedType}...`;
+                }
             } else if (!detectedObject && tracking) {
                 tracking = false;
                 const endTime = new Date();
@@ -219,6 +236,7 @@
                 addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
                 saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
                 info.textContent = 'Aguardando detecção de caminhão ou carreta...';
+                lastBBox = null;
             }
 
             requestAnimationFrame(detectFrame);
