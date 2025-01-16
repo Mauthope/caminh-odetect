@@ -178,6 +178,14 @@
             }
         }
 
+        function waitForVideo() {
+            return new Promise((resolve) => {
+                video.onloadeddata = () => {
+                    resolve();
+                };
+            });
+        }
+
         async function detectFrame() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -227,6 +235,7 @@
         async function init() {
             model = await cocoSsd.load();
             await populateCameraOptions();
+            await waitForVideo();
             loadTable();
             detectFrame();
         }
