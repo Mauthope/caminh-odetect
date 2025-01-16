@@ -241,14 +241,16 @@
                 if ((currentTime - lastDetectionTime) > INACTIVITY_TIMEOUT) {
                     tracking = false;
                     const endTime = currentTime;
-                    const duration = Math.floor((endTime - startTime) / 1000);
+                    const durationInSeconds = Math.floor((endTime - startTime) / 1000);
+                    const formattedDuration = formatDuration(durationInSeconds); // Formatar em hh:mm:ss
                     const formattedStartTime = startTime.toLocaleTimeString();
                     const formattedEndTime = endTime.toLocaleTimeString();
-                    addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
-                    saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
+                    addTableRow(formattedStartTime, formattedEndTime, formattedDuration, detectedType);
+                    saveRow(formattedStartTime, formattedEndTime, formattedDuration, detectedType);
                     info.textContent = 'Aguardando detecção de caminhão ou carreta...';
                     lastBBox = null;
                 }
+
             }
 
             requestAnimationFrame(detectFrame);
