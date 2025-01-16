@@ -69,6 +69,26 @@
             display: inline-block;
             margin-top: 20px;
         }
+
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -89,6 +109,10 @@
         </thead>
         <tbody></tbody>
     </table>
+    <div class="buttons">
+        <button id="clear-storage">Clear Local Storage</button>
+        <button id="download-csv">Download CSV</button>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
@@ -98,6 +122,8 @@
         const tableBody = document.getElementById('tracking-table').querySelector('tbody');
         const canvas = document.getElementById('overlay');
         const ctx = canvas.getContext('2d');
+        const clearStorageButton = document.getElementById('clear-storage');
+        const downloadCsvButton = document.getElementById('download-csv');
 
         let model;
         let tracking = false;
@@ -197,6 +223,33 @@
 
             requestAnimationFrame(detectFrame);
         }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('trackingData');
+            tableBody.innerHTML = '';
+            alert('Local storage cleared!');
+        }
+
+        function downloadCSV() {
+            const rows = [['Start Time', 'End Time', 'Duration (seconds)', 'Type']];
+            const savedData = JSON.parse(localStorage.getItem('trackingData')) || [];
+
+            savedData.forEach(row => {
+                rows.push([row.startTime, row.endTime, row.duration, row.type]);
+            });
+
+            let csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', 'tracking_data.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        clearStorageButton.addEventListener('click', clearLocalStorage);
+        downloadCsvButton.addEventListener('click', downloadCSV);
 
         async function init() {
             model = await cocoSsd.load();
