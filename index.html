@@ -241,24 +241,15 @@
                 if ((currentTime - lastDetectionTime) > INACTIVITY_TIMEOUT) {
                     tracking = false;
                     const endTime = currentTime;
-                    const durationInSeconds = Math.floor((endTime - startTime) / 1000);
-                    const formattedDuration = formatDuration(durationInSeconds); // Formatar em hh:mm:ss
+                    const duration = Math.floor((endTime - startTime) / 1000);
                     const formattedStartTime = startTime.toLocaleTimeString();
                     const formattedEndTime = endTime.toLocaleTimeString();
-                    addTableRow(formattedStartTime, formattedEndTime, formattedDuration, detectedType);
-                    saveRow(formattedStartTime, formattedEndTime, formattedDuration, detectedType);
+                    addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
+                    saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
                     info.textContent = 'Aguardando detecção de caminhão ou carreta...';
                     lastBBox = null;
                 }
-
             }
-// Função para converter segundos em formato hh:mm:ss
-function formatDuration(seconds) {
-    const hours = Math.floor(seconds / 3600).toString().padStart(2, '0');
-    const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
-    const secs = (seconds % 60).toString().padStart(2, '0');
-    return `${hours}:${minutes}:${secs}`;
-}
 
             requestAnimationFrame(detectFrame);
         }
