@@ -196,63 +196,64 @@
             );
         }
 
-        async function detectFrame() {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+       async function detectFrame() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const predictions = await model.detect(video);
+    const predictions = await model.detect(video);
 
-            predictions.forEach(prediction => {
-                const [x, y, width, height] = prediction.bbox;
-                ctx.strokeStyle = 'red';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, width, height);
-                ctx.font = '16px Arial';
-                ctx.fillStyle = 'red';
-                ctx.fillText(
-                    `${prediction.class} (${(prediction.score * 100).toFixed(1)}%)`,
-                    x,
-                    y > 10 ? y - 5 : 10
-                );
-            });
+    predictions.forEach(prediction => {
+        const [x, y, width, height] = prediction.bbox;
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, width, height);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = 'red';
+        ctx.fillText(
+            `${prediction.class} (${(prediction.score * 100).toFixed(1)}%)`,
+            x,
+            y > 10 ? y - 5 : 10
+        );
+    });
 
-            const detectedObject = predictions.find(prediction => 
-                (prediction.class === 'truck' || prediction.class === 'car') && prediction.score > 0.5
-            );
+    const detectedObject = predictions.find(prediction => 
+        (prediction.class === 'truck' || prediction.class === 'car' || prediction.class === 'bus') && prediction.score > 0.5
+    );
 
-            const currentTime = new Date();
+    const currentTime = new Date();
 
-            if (detectedObject) {
-                if (!tracking) {
-                    // Inicia nova detecção se não estiver rastreando
-                    tracking = true;
-                    startTime = currentTime;
-                    detectedType = detectedObject.class === 'truck' ? 'Caminhão' : 'Carreta';
-                    lastBBox = detectedObject.bbox;
-                    lastDetectionTime = currentTime;
-                    info.textContent = `Rastreando ${detectedType}...`;
-                } else if (isSameObject(lastBBox, detectedObject.bbox)) {
-                    // Continua com a detecção atual se o objeto não mudou
-                    lastDetectionTime = currentTime;
-                }
-            } else if (tracking) {
-                // Se perder a detecção e o tempo de inatividade for superior a 1 minuto, encerra a detecção
-                if ((currentTime - lastDetectionTime) > INACTIVITY_TIMEOUT) {
-                    tracking = false;
-                    const endTime = currentTime;
-                    const duration = Math.floor((endTime - startTime) / 1000);
-                    const formattedStartTime = startTime.toLocaleTimeString();
-                    const formattedEndTime = endTime.toLocaleTimeString();
-                    addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
-                    saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
-                    info.textContent = 'Aguardando detecção de caminhão ou carreta...';
-                    lastBBox = null;
-                }
-            }
-
-            requestAnimationFrame(detectFrame);
+    if (detectedObject) {
+        if (!tracking) {
+            // Inicia nova detecção se não estiver rastreando
+            tracking = true;
+            startTime = currentTime;
+            detectedType = (detectedObject.class === 'truck' || detectedObject.class === 'bus') ? 'Caminhão' : 'Carreta';
+            lastBBox = detectedObject.bbox;
+            lastDetectionTime = currentTime;
+            info.textContent = `Rastreando ${detectedType}...`;
+        } else if (isSameObject(lastBBox, detectedObject.bbox)) {
+            // Continua com a detecção atual se o objeto não mudou
+            lastDetectionTime = currentTime;
         }
+    } else if (tracking) {
+        // Se perder a detecção e o tempo de inatividade for superior a 1 minuto, encerra a detecção
+        if ((currentTime - lastDetectionTime) > INACTIVITY_TIMEOUT) {
+            tracking = false;
+            const endTime = currentTime;
+            const duration = Math.floor((endTime - startTime) / 1000);
+            const formattedStartTime = startTime.toLocaleTimeString();
+            const formattedEndTime = endTime.toLocaleTimeString();
+            addTableRow(formattedStartTime, formattedEndTime, duration, detectedType);
+            saveRow(formattedStartTime, formattedEndTime, duration, detectedType);
+            info.textContent = 'Aguardando detecção de caminhão ou carreta...';
+            lastBBox = null;
+        }
+    }
+
+    requestAnimationFrame(detectFrame);
+}
+
 
         function clearLocalStorage() {
             localStorage.removeItem('trackingData');
