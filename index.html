@@ -196,7 +196,7 @@
             );
         }
 
-       async function detectFrame() {
+  async function detectFrame() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -204,6 +204,11 @@
     const predictions = await model.detect(video);
 
     predictions.forEach(prediction => {
+        // Ignorar "person" e "car" ao desenhar no canvas
+        if (prediction.class === 'person' || prediction.class === 'car') {
+            return;
+        }
+
         const [x, y, width, height] = prediction.bbox;
         ctx.strokeStyle = 'red';
         ctx.lineWidth = 2;
@@ -218,7 +223,7 @@
     });
 
     const detectedObject = predictions.find(prediction => 
-        (prediction.class === 'truck' || prediction.class === 'car' || prediction.class === 'bus') && prediction.score > 0.5
+        (prediction.class === 'truck' || prediction.class === 'bus') && prediction.score > 0.5
     );
 
     const currentTime = new Date();
@@ -228,7 +233,7 @@
             // Inicia nova detecção se não estiver rastreando
             tracking = true;
             startTime = currentTime;
-            detectedType = (detectedObject.class === 'truck' || detectedObject.class === 'bus') ? 'Caminhão' : 'Carreta';
+            detectedType = detectedObject.class === 'truck' ? 'Caminhão' : 'Carreta';
             lastBBox = detectedObject.bbox;
             lastDetectionTime = currentTime;
             info.textContent = `Rastreando ${detectedType}...`;
